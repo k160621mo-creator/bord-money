@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>展覽背板與鐵腳架報價系統</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1f4e78">
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    :root {
+      --primary: #1f4e78;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --accent: #27ae60;
+      --warn: #e67e22;
+      --input-bg: #fffde7;
+    }
+
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    h1 { font-size: 1.2rem; color: var(--primary); text-align: center; margin-top: 0; }
+    h2 { font-size: 1rem; color: var(--primary); border-bottom: 2px solid var(--primary); padding-bottom: 6px; margin-top: 0; }
+
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 0.85rem; font-weight: bold; margin-bottom: 4px; color: #555; }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      background-color: var(--input-bg);
+      font-size: 0.95rem;
+    }
+
+    .row { display: flex; gap: 10px; }
+    .row .form-group { flex: 1; }
+
+    .travel-notice {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      margin-top: 6px;
+      display: none;
+    }
+    .notice-free { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #a5d6a7; }
+    .notice-charge { background-color: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+    th, td { padding: 8px 4px; text-align: left; border-bottom: 1px solid #eee; }
+    th { color: #666; font-weight: 600; }
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    .total-box {
+      background: #e8f5e9;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
+    }
+    .total-row { display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 4px; }
+    .grand-total { font-size: 1.2rem; font-weight: bold; color: var(--accent); margin-top: 6px; border-top: 1px solid #c8e6c9; padding-top: 6px; }
+
+    .btn {
+      width: 100%;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+
+    .install-btn { display: none; margin-bottom: 15px; }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-content {
+      background: white;
+      width: 95%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .admin-table input {
+      padding: 4px 6px;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <button id="installApp" class="btn btn-primary install-btn">📲 安裝報價 App 至主畫面</button>
+
+  <div class="card">
+    <h1>📐 背板與鐵腳架報價計算</h1>
+    
+    <div class="form-group">
+      <label>客戶類別 (Tier)</label>
+      <select id="tier" onchange="calculate()">
+        <option value="cash">現金牌價</option>
+        <option value="m5k">會員（五千牌價）</option>
+        <option value="m30k">會員（三萬牌價）</option>
+        <option value="m100k">會員（十萬牌價）</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>施工地點 / 地址區劃（自動判斷差旅費）</label>
+      <input type="text" id="address" placeholder="例如：新北市三重區重新路 / 桃園市中壢區" oninput="calculate()">
+      <div id="travelNotice" class="travel-notice"></div>
+    </div>
+
+    <div id="travelFeeGroup" class="form-group" style="display: none;">
+      <label>跨區/偏遠差旅費 (元)</label>
+      <input type="number" id="travelFeeInput" value="1000" oninput="calculate()">
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>背板總寬度 (cm)</label>
+        <input type="number" id="width" value="350" oninput="calculate()">
+      </div>
+      <div class="form-group">
+        <label>背板總高度 (cm)</label>
+        <input type="number" id="height" value="220" oninput="calculate()">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="form-group">
+        <label>貼紙材質</label>
+        <select id="sticker" onchange="calculate()">
+          <option value="oil">油性白背膠霧膜</option>
+          <option value="milk">乳性白背膠霧膜</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>板材材質</label>
+        <select id="board" onchange="calculate()">
+          <option value="std">5MM高優質合成板</option>
+          <option value="h300">5MM 300CM合成板</option>
+          <option value="gloss">5MM亮面合成板</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>鐵腳架規格</label>
+      <select id="stand" onchange="calculate()">
+        <option value="auto">自動依高度匹配</option>
+        <option value="150">150CM 鐵腳架</option>
+        <option value="180">180CM 鐵腳架</option>
+        <option value="225">225CM 鐵腳架</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 報價明細</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th class="text-center">數量/才</th>
+          <th class="text-right">小計</th>
+        </tr>
+      </thead>
+      <tbody id="detailTable"></tbody>
+    </table>
+
+    <div class="total-box">
+      <div class="total-row"><span>未稅總價：</span><span id="subtotal">$0</span></div>
+      <div class="total-row"><span>營業稅 (5%)：</span><span id="tax">$0</span></div>
+      <div class="total-row grand-total"><span>含稅總價：</span><span id="grandTotal">$0</span></div>
+    </div>
+  </div>
+
+  <button class="btn btn-secondary" onclick="openAdminModal()">⚙️ 開啟後台：單價設定與管理</button>
+</div>
+
+<div id="adminModal" class="modal">
+  <div class="modal-content">
+    <h2>⚙️ 後台單價與參數管理</h2>
+    <p style="font-size: 0.8rem; color: #666;">可自訂現金與各會員等級單價，修改後將自動保存於本地離線記憶庫中。</p>
+    
+    <div style="overflow-x: auto;">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th>現金</th>
+            <th>五千</th>
+            <th>三萬</th>
+            <th>十萬</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 15px; display: flex; gap: 8px;">
+      <button class="btn btn-primary" onclick="saveAdminRates()">💾 儲存並更新價格</button>
+      <button class="btn btn-danger" onclick="resetDefaultRates()">🔄 恢復預設</button>
+      <button class="btn btn-secondary" onclick="closeAdminModal()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "5566";
+
+const DEFAULT_RATES = {
+  sticker: {
+    oil:  { cash: 16.0, m5k: 15.9, m30k: 15.7, m100k: 15.0, waste: { cash: 15.0, m5k: 14.9, m30k: 14.7, m100k: 14.0 } },
+    milk: { cash: 23.0, m5k: 22.0, m30k: 19.3, m100k: 18.4, waste: { cash: 22.0, m5k: 21.0, m30k: 18.3, m100k: 17.4 } }
+  },
+  board: {
+    std:   { cash: 14.0, m5k: 12.0, m30k: 12.0, m100k: 12.0 },
+    h300:  { cash: 16.0, m5k: 14.0, m30k: 14.0, m100k: 14.0 },
+    gloss: { cash: 19.0, m5k: 18.0, m30k: 18.0, m100k: 18.0 }
+  },
+  stand: {
+    150: { cash: 170, m5k: 160, m30k: 160, m100k: 160 },
+    180: { cash: 205, m5k: 195, m30k: 195, m100k: 195 },
+    225: { cash: 250, m5k: 240, m30k: 240, m100k: 240 }
+  },
+  installUnit: { cash: 15, m5k: 14, m30k: 14, m100k: 14 },
+  installBase: { cash: 1800, m5k: 1800, m30k: 1800, m100k: 1800 },
+  removeUnit:  { cash: 10, m5k: 10, m30k: 10, m100k: 10 },
+  removeBase:  { cash: 1200, m5k: 1000, m30k: 1000, m100k: 1000 },
+  trash:       { cash: 8, m5k: 6, m30k: 6, m100k: 6 }
+};
+
+let RATES = JSON.parse(localStorage.getItem('CUSTOM_RATES')) || JSON.parse(JSON.stringify(DEFAULT_RATES));
+
+const FREE_ZONES = ["台北市", "臺北市", "板橋", "三重", "中和", "永和", "新莊", "新店", "土城", "蘆洲", "樹林", "汐止", "泰山", "五股", "淡水", "八里"];
+
+function checkTravelFee(address) {
+  if (!address.trim()) return { hasFee: false, message: '', show: false };
+  const isFree = FREE_ZONES.some(zone => address.includes(zone));
+  return isFree 
+    ? { hasFee: false, message: '✅ 雙北核心服務區（免加收偏遠/跨區差旅費）', show: true, isNoticeFree: true }
+    : { hasFee: true, message: '⚠️ 超出台北市/新北市核心區（需加收跨區/偏遠差旅費）', show: true, isNoticeFree: false };
+}
+
+function calculate() {
+  const tier = document.getElementById('tier').value;
+  const width = parseFloat(document.getElementById('width').value) || 0;
+  const height = parseFloat(document.getElementById('height').value) || 0;
+  const address = document.getElementById('address').value;
+  
+  const stickerType = document.getElementById('sticker').value;
+  const boardType = document.getElementById('board').value;
+  const standOpt = document.getElementById('stand').value;
+
+  const travelCheck = checkTravelFee(address);
+  const noticeDiv = document.getElementById('travelNotice');
+  const travelFeeGroup = document.getElementById('travelFeeGroup');
+
+  let travelFee = 0;
+  if (travelCheck.show) {
+    noticeDiv.style.display = 'block';
+    noticeDiv.innerText = travelCheck.message;
+    if (travelCheck.isNoticeFree) {
+      noticeDiv.className = 'travel-notice notice-free';
+      travelFeeGroup.style.display = 'none';
+    } else {
+      noticeDiv.className = 'travel-notice notice-charge';
+      travelFeeGroup.style.display = 'block';
+      travelFee = parseFloat(document.getElementById('travelFeeInput').value) || 0;
+    }
+  } else {
+    noticeDiv.style.display = 'none';
+    travelFeeGroup.style.display = 'none';
+  }
+
+  const sqft = Math.ceil((width * height) / 900);
+  const segments = Math.ceil(width / 120);
+
+  const tailWidth = width - (120 * (segments - 1));
+  let wasteSqft = 0;
+  if (tailWidth < 110 && width > 0) {
+    wasteSqft = (segments * 120 * height / 900) - sqft;
+  }
+
+  let standSize = standOpt;
+  if (standOpt === 'auto') {
+    if (height <= 165) standSize = '150';
+    else if (height <= 202.5) standSize = '180';
+    else standSize = '225';
+  }
+
+  const stickerPrice = RATES.sticker[stickerType][tier];
+  const stickerCost = Math.max(sqft * stickerPrice, 99);
+
+  const boardPrice = RATES.board[boardType][tier];
+  const boardCost = sqft * boardPrice;
+
+  const wastePrice = RATES.sticker[stickerType].waste[tier];
+  const wasteCost = wasteSqft * wastePrice;
+
+  const standPrice = RATES.stand[standSize][tier];
+  const standCost = segments * standPrice;
+
+  const installUnitPrice = RATES.installUnit[tier];
+  const installBase = RATES.installBase[tier];
+  const installCost = Math.max(sqft * installUnitPrice, installBase);
+
+  const removeUnitPrice = RATES.removeUnit[tier];
+  const removeBase = RATES.removeBase[tier];
+  const removeCost = Math.max(sqft * removeUnitPrice, removeBase);
+
+  const trashPrice = RATES.trash[tier];
+  const trashCost = sqft * trashPrice;
+
+  const items = [
+    { name: '貼紙印製', qty: `${sqft} 才`, cost: stickerCost },
+    { name: '板材費用', qty: `${sqft} 才`, cost: boardCost },
+    { name: '貼紙損耗費', qty: `${wasteSqft.toFixed(1)} 才`, cost: wasteCost },
+    { name: `L型鐵腳架 (${standSize}cm)`, qty: `${segments} 個`, cost: standCost },
+    { name: '現場施工費', qty: '1 式', cost: installCost },
+    { name: '現場撤場費', qty: '1 式', cost: removeCost },
+    { name: '廢棄物清運費', qty: `${sqft} 才`, cost: trashCost }
+  ];
+
+  if (travelCheck.hasFee && travelFee > 0) {
+    items.push({ name: '跨區/偏遠施工差旅費', qty: '1 式', cost: travelFee });
+  }
+
+  const tbody = document.getElementById('detailTable');
+  tbody.innerHTML = '';
+  let subtotal = 0;
+
+  items.forEach(item => {
+    subtotal += item.cost;
+    tbody.innerHTML += `
+      <tr>
+        <td>${item.name}</td>
+        <td class="text-center">${item.qty}</td>
+        <td class="text-right">$${Math.round(item.cost).toLocaleString()}</td>
+      </tr>
+    `;
+  });
+
+  const tax = Math.round(subtotal * 0.05);
+  const grandTotal = subtotal + tax;
+
+  document.getElementById('subtotal').innerText = `$${Math.round(subtotal).toLocaleString()}`;
+  document.getElementById('tax').innerText = `$${tax.toLocaleString()}`;
+  document.getElementById('grandTotal').innerText = `$${grandTotal.toLocaleString()}`;
+}
+
+function openAdminModal() {
+  const pwd = prompt("🔒 請輸入管理員密碼以進入後台：");
+  if (pwd === ADMIN_PASSWORD) {
+    const tbody = document.getElementById('adminTableBody');
+    tbody.innerHTML = '';
+
+    const createRow = (label, path) => {
+      const tiers = ['cash', 'm5k', 'm30k', 'm100k'];
+      let html = `<tr><td><strong>${label}</strong></td>`;
+      tiers.forEach(t => {
+        let val = eval(`RATES.${path}.${t}`);
+        html += `<td><input type="number" step="0.1" data-path="${path}.${t}" value="${val}"></td>`;
+      });
+      html += '</tr>';
+      return html;
+    };
+
+    let rows = '';
+    rows += createRow('油性白背膠/才', 'sticker.oil');
+    rows += createRow('油性損耗單價/才', 'sticker.oil.waste');
+    rows += createRow('乳性白背膠/才', 'sticker.milk');
+    rows += createRow('乳性損耗單價/才', 'sticker.milk.waste');
+    rows += createRow('5mm高優質合成板', 'board.std');
+    rows += createRow('5mm 300cm合成板', 'board.h300');
+    rows += createRow('5mm亮面合成板', 'board.gloss');
+    rows += createRow('150cm 鐵腳架/個', 'stand.150');
+    rows += createRow('180cm 鐵腳架/個', 'stand.180');
+    rows += createRow('225cm 鐵腳架/個', 'stand.225');
+    rows += createRow('施工費單價/才', 'installUnit');
+    rows += createRow('施工費基本價', 'installBase');
+    rows += createRow('撤場費單價/才', 'removeUnit');
+    rows += createRow('撤場費基本價', 'removeBase');
+    rows += createRow('廢棄物清運/才', 'trash');
+
+    tbody.innerHTML = rows;
+    document.getElementById('adminModal').style.display = 'flex';
+  } else if (pwd !== null) {
+    alert("❌ 密碼錯誤！無法開啟後台面板。");
+  }
+}
+
+function closeAdminModal() {
+  document.getElementById('adminModal').style.display = 'none';
+}
+
+function saveAdminRates() {
+  const inputs = document.querySelectorAll('#adminTableBody input');
+  inputs.forEach(input => {
+    const path = input.dataset.path;
+    const val = parseFloat(input.value) || 0;
+    eval(`RATES.${path} = ${val}`);
+  });
+
+  localStorage.setItem('CUSTOM_RATES', JSON.stringify(RATES));
+  alert('✅ 單價設定已成功儲存！');
+  closeAdminModal();
+  calculate();
+}
+
+function resetDefaultRates() {
+  if (confirm('確定要恢復預設單價嗎？自訂單價將被清空。')) {
+    RATES = JSON.parse(JSON.stringify(DEFAULT_RATES));
+    localStorage.removeItem('CUSTOM_RATES');
+    alert('已成功恢復預設單價！');
+    closeAdminModal();
+    calculate();
+  }
+}
+
+calculate();
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const btn = document.getElementById('installApp');
+  btn.style.display = 'block';
+  btn.addEventListener('click', () => {
+    btn.style.display = 'none';
+    deferredPrompt.prompt();
+  });
+});
+</script>
+</body>
+</html>
