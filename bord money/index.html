@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>展覽背板與鐵腳架報價系統</title>
+  <title>背板施工報價單</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121212">
   <link rel="apple-touch-icon" href="icon.png">
@@ -117,25 +117,28 @@
     .modal-content {
       background: #1e1e24;
       border: 1px solid var(--card-border);
-      width: 90%;
-      max-width: 550px;
+      width: 95%;
+      max-width: 650px;
       max-height: 90vh;
       overflow-y: auto;
       border-radius: 14px;
-      padding: 22px;
+      padding: 20px;
       box-shadow: 0 20px 40px rgba(0,0,0,0.6);
     }
     .pwd-card {
       max-width: 360px;
       text-align: center;
     }
+    .admin-table { font-size: 0.8rem; }
+    .admin-table th, .admin-table td { padding: 6px 2px; }
     .admin-table input {
-      padding: 6px 8px;
-      font-size: 0.85rem;
+      padding: 5px 4px;
+      font-size: 0.82rem;
       background: #16161a;
       border: 1px solid #334155;
       color: #fff;
       width: 100%;
+      text-align: center;
     }
   </style>
 </head>
@@ -150,10 +153,11 @@
     <div class="form-group">
       <label>客戶類別 (Tier)</label>
       <select id="tier" onchange="calculate()">
-        <option value="cash">現金牌價</option>
-        <option value="m5k">會員（五千牌價）</option>
-        <option value="m30k">會員（三萬牌價）</option>
-        <option value="m100k">會員（十萬牌價）</option>
+        <option value="cash">1. 現金牌價</option>
+        <option value="m5k">2. 會員（五千牌價）</option>
+        <option value="m30k_1">3. 會員（三萬牌價 - A）</option>
+        <option value="m30k_2">4. 會員（三萬牌價 - B）</option>
+        <option value="m100k">5. 會員（十萬牌價）</option>
       </select>
     </div>
 
@@ -248,7 +252,7 @@
 <div id="adminModal" class="modal">
   <div class="modal-content">
     <h2>⚙️ 後台單價與參數管理</h2>
-    <p style="font-size: 0.8rem; color: var(--text-muted);">可自訂現金與各會員等級單價，修改後將自動保存於本地離線記憶庫中。</p>
+    <p style="font-size: 0.8rem; color: var(--text-muted);">可自訂現金與 4 種會員等級單價，修改後將自動保存於離線記憶庫中。</p>
     
     <div style="overflow-x: auto;">
       <table class="admin-table">
@@ -257,7 +261,8 @@
             <th>項目</th>
             <th>現金</th>
             <th>五千</th>
-            <th>三萬</th>
+            <th>三萬A</th>
+            <th>三萬B</th>
             <th>十萬</th>
           </tr>
         </thead>
@@ -278,31 +283,30 @@ const ADMIN_PASSWORD = "5566";
 
 const DEFAULT_RATES = {
   sticker: {
-    oil:  { cash: 16.0, m5k: 15.9, m30k: 15.7, m100k: 15.0, waste: { cash: 15.0, m5k: 14.9, m30k: 14.7, m100k: 14.0 } },
-    milk: { cash: 23.0, m5k: 22.0, m30k: 19.3, m100k: 18.4, waste: { cash: 22.0, m5k: 21.0, m30k: 18.3, m100k: 17.4 } }
+    oil:  { cash: 16.0, m5k: 15.9, m30k_1: 15.7, m30k_2: 15.5, m100k: 15.0, waste: { cash: 15.0, m5k: 14.9, m30k_1: 14.7, m30k_2: 14.5, m100k: 14.0 } },
+    milk: { cash: 23.0, m5k: 22.0, m30k_1: 19.3, m30k_2: 18.9, m100k: 18.4, waste: { cash: 22.0, m5k: 21.0, m30k_1: 18.3, m30k_2: 17.9, m100k: 17.4 } }
   },
   board: {
-    std:   { cash: 14.0, m5k: 12.0, m30k: 12.0, m100k: 12.0 },
-    h300:  { cash: 16.0, m5k: 14.0, m30k: 14.0, m100k: 14.0 },
-    gloss: { cash: 19.0, m5k: 18.0, m30k: 18.0, m100k: 18.0 }
+    std:   { cash: 14.0, m5k: 12.0, m30k_1: 12.0, m30k_2: 12.0, m100k: 12.0 },
+    h300:  { cash: 16.0, m5k: 14.0, m30k_1: 14.0, m30k_2: 14.0, m100k: 14.0 },
+    gloss: { cash: 19.0, m5k: 18.0, m30k_1: 18.0, m30k_2: 18.0, m100k: 18.0 }
   },
   stand: {
-    150: { cash: 170, m5k: 160, m30k: 160, m100k: 160 },
-    180: { cash: 205, m5k: 195, m30k: 195, m100k: 195 },
-    225: { cash: 250, m5k: 240, m30k: 240, m100k: 240 }
+    150: { cash: 170, m5k: 160, m30k_1: 160, m30k_2: 160, m100k: 160 },
+    180: { cash: 205, m5k: 195, m30k_1: 195, m30k_2: 195, m100k: 195 },
+    225: { cash: 250, m5k: 240, m30k_1: 240, m30k_2: 240, m100k: 240 }
   },
-  installUnit: { cash: 15, m5k: 14, m30k: 14, m100k: 14 },
-  installBase: { cash: 1800, m5k: 1800, m30k: 1800, m100k: 1800 },
-  removeUnit:  { cash: 10, m5k: 10, m30k: 10, m100k: 10 },
-  removeBase:  { cash: 1200, m5k: 1000, m30k: 1000, m100k: 1000 },
-  trash:       { cash: 8, m5k: 6, m30k: 6, m100k: 6 }
+  installUnit: { cash: 15, m5k: 14, m30k_1: 14, m30k_2: 14, m100k: 14 },
+  installBase: { cash: 1800, m5k: 1800, m30k_1: 1800, m30k_2: 1800, m100k: 1800 },
+  removeUnit:  { cash: 10, m5k: 10, m30k_1: 10, m30k_2: 10, m100k: 10 },
+  removeBase:  { cash: 1200, m5k: 1000, m30k_1: 1000, m30k_2: 1000, m100k: 1000 },
+  trash:       { cash: 8, m5k: 6, m30k_1: 6, m30k_2: 6, m100k: 6 }
 };
 
 let RATES = JSON.parse(localStorage.getItem('CUSTOM_RATES')) || JSON.parse(JSON.stringify(DEFAULT_RATES));
 
 const FREE_ZONES = ["台北市", "臺北市", "板橋", "三重", "中和", "永和", "新莊", "新店", "土城", "蘆洲", "樹林", "汐止", "泰山", "五股", "淡水", "八里"];
 
-// 物件值讀取與寫入安全輔助函式 (取代不安全的 eval)
 function getNestedValue(obj, path) {
   return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : 0, obj);
 }
@@ -359,10 +363,20 @@ function calculate() {
   const sqft = Math.ceil((width * height) / 900);
   const segments = Math.ceil(width / 120);
 
+  // 損耗計算條件邏輯
   const tailWidth = width - (120 * (segments - 1));
   let wasteSqft = 0;
-  if (tailWidth < 110 && width > 0) {
-    wasteSqft = (segments * 120 * height / 900) - sqft;
+  
+  if (stickerType === 'oil') {
+    // 油性：總段數達 3 段以上才計算損耗
+    if (segments >= 3 && tailWidth < 110 && width > 0) {
+      wasteSqft = (segments * 120 * height / 900) - sqft;
+    }
+  } else if (stickerType === 'milk') {
+    // 乳性：每段耗損 110cm 以內才算損耗
+    if (tailWidth < 110 && width > 0) {
+      wasteSqft = (segments * 120 * height / 900) - sqft;
+    }
   }
 
   let standSize = standOpt;
@@ -458,7 +472,7 @@ function openAdminModal() {
   tbody.innerHTML = '';
 
   const createRow = (label, path) => {
-    const tiers = ['cash', 'm5k', 'm30k', 'm100k'];
+    const tiers = ['cash', 'm5k', 'm30k_1', 'm30k_2', 'm100k'];
     let html = `<tr><td><strong>${label}</strong></td>`;
     tiers.forEach(t => {
       let val = getNestedValue(RATES, `${path}.${t}`);
@@ -508,10 +522,10 @@ function saveAdminRates() {
 }
 
 function resetDefaultRates() {
-  if (confirm('確定要恢復預設單價嗎？自訂單價將被清空。')) {
+  if (confirm('確定要恢復預設單價嗎？自訂單價將被清空並載入最新預設價格。')) {
     RATES = JSON.parse(JSON.stringify(DEFAULT_RATES));
     localStorage.removeItem('CUSTOM_RATES');
-    alert('已成功恢復預設單價！');
+    alert('已成功恢復最新的預設單價！');
     closeAdminModal();
     calculate();
   }
