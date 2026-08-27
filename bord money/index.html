@@ -88,6 +88,7 @@
 
     .install-btn { display: none; margin-bottom: 15px; }
 
+    /* Modal 彈窗通用樣式 */
     .modal {
       display: none;
       position: fixed;
@@ -99,12 +100,16 @@
     }
     .modal-content {
       background: white;
-      width: 95%;
+      width: 90%;
       max-width: 550px;
       max-height: 90vh;
       overflow-y: auto;
       border-radius: 12px;
       padding: 20px;
+    }
+    .pwd-card {
+      max-width: 350px;
+      text-align: center;
     }
     .admin-table input {
       padding: 4px 6px;
@@ -202,9 +207,23 @@
     </div>
   </div>
 
-  <button class="btn btn-secondary" onclick="openAdminModal()">⚙️ 開啟後台：單價設定與管理</button>
+  <button class="btn btn-secondary" onclick="openPasswordModal()">⚙️ 開啟後台：單價設定與管理</button>
 </div>
 
+<!-- 密碼輸入彈窗 -->
+<div id="passwordModal" class="modal">
+  <div class="modal-content pwd-card">
+    <h2>🔒 管理員身分驗證</h2>
+    <p style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">請輸入 4 位數管理員密碼：</p>
+    <div class="form-group">
+      <input type="password" id="adminPwdInput" placeholder="請輸入密碼" style="text-align: center; font-size: 1.2rem; letter-spacing: 4px;" maxlength="10">
+    </div>
+    <button class="btn btn-primary" onclick="verifyPassword()">解鎖進入後台</button>
+    <button class="btn btn-secondary" onclick="closePasswordModal()">取消</button>
+  </div>
+</div>
+
+<!-- 後台管理彈窗 -->
 <div id="adminModal" class="modal">
   <div class="modal-content">
     <h2>⚙️ 後台單價與參數管理</h2>
@@ -377,45 +396,61 @@ function calculate() {
   document.getElementById('grandTotal').innerText = `$${grandTotal.toLocaleString()}`;
 }
 
-function openAdminModal() {
-  const pwd = prompt("🔒 請輸入管理員密碼以進入後台：");
+// --- 身分驗證邏輯 ---
+function openPasswordModal() {
+  document.getElementById('adminPwdInput').value = '';
+  document.getElementById('passwordModal').style.display = 'flex';
+}
+
+function closePasswordModal() {
+  document.getElementById('passwordModal').style.display = 'none';
+}
+
+function verifyPassword() {
+  const pwd = document.getElementById('adminPwdInput').value;
   if (pwd === ADMIN_PASSWORD) {
-    const tbody = document.getElementById('adminTableBody');
-    tbody.innerHTML = '';
-
-    const createRow = (label, path) => {
-      const tiers = ['cash', 'm5k', 'm30k', 'm100k'];
-      let html = `<tr><td><strong>${label}</strong></td>`;
-      tiers.forEach(t => {
-        let val = eval(`RATES.${path}.${t}`);
-        html += `<td><input type="number" step="0.1" data-path="${path}.${t}" value="${val}"></td>`;
-      });
-      html += '</tr>';
-      return html;
-    };
-
-    let rows = '';
-    rows += createRow('油性白背膠/才', 'sticker.oil');
-    rows += createRow('油性損耗單價/才', 'sticker.oil.waste');
-    rows += createRow('乳性白背膠/才', 'sticker.milk');
-    rows += createRow('乳性損耗單價/才', 'sticker.milk.waste');
-    rows += createRow('5mm高優質合成板', 'board.std');
-    rows += createRow('5mm 300cm合成板', 'board.h300');
-    rows += createRow('5mm亮面合成板', 'board.gloss');
-    rows += createRow('150cm 鐵腳架/個', 'stand.150');
-    rows += createRow('180cm 鐵腳架/個', 'stand.180');
-    rows += createRow('225cm 鐵腳架/個', 'stand.225');
-    rows += createRow('施工費單價/才', 'installUnit');
-    rows += createRow('施工費基本價', 'installBase');
-    rows += createRow('撤場費單價/才', 'removeUnit');
-    rows += createRow('撤場費基本價', 'removeBase');
-    rows += createRow('廢棄物清運/才', 'trash');
-
-    tbody.innerHTML = rows;
-    document.getElementById('adminModal').style.display = 'flex';
-  } else if (pwd !== null) {
-    alert("❌ 密碼錯誤！無法開啟後台面板。");
+    closePasswordModal();
+    openAdminModal();
+  } else {
+    alert("❌ 密碼錯誤！請重新輸入。");
   }
+}
+
+// --- 後台管理邏輯 ---
+function openAdminModal() {
+  const tbody = document.getElementById('adminTableBody');
+  tbody.innerHTML = '';
+
+  const createRow = (label, path) => {
+    const tiers = ['cash', 'm5k', 'm30k', 'm100k'];
+    let html = `<tr><td><strong>${label}</strong></td>`;
+    tiers.forEach(t => {
+      let val = eval(`RATES.${path}.${t}`);
+      html += `<td><input type="number" step="0.1" data-path="${path}.${t}" value="${val}"></td>`;
+    });
+    html += '</tr>';
+    return html;
+  };
+
+  let rows = '';
+  rows += createRow('油性白背膠/才', 'sticker.oil');
+  rows += createRow('油性損耗單價/才', 'sticker.oil.waste');
+  rows += createRow('乳性白背膠/才', 'sticker.milk');
+  rows += createRow('乳性損耗單價/才', 'sticker.milk.waste');
+  rows += createRow('5mm高優質合成板', 'board.std');
+  rows += createRow('5mm 300cm合成板', 'board.h300');
+  rows += createRow('5mm亮面合成板', 'board.gloss');
+  rows += createRow('150cm 鐵腳架/個', 'stand.150');
+  rows += createRow('180cm 鐵腳架/個', 'stand.180');
+  rows += createRow('225cm 鐵腳架/個', 'stand.225');
+  rows += createRow('施工費單價/才', 'installUnit');
+  rows += createRow('施工費基本價', 'installBase');
+  rows += createRow('撤場費單價/才', 'removeUnit');
+  rows += createRow('撤場費基本價', 'removeBase');
+  rows += createRow('廢棄物清運/才', 'trash');
+
+  tbody.innerHTML = rows;
+  document.getElementById('adminModal').style.display = 'flex';
 }
 
 function closeAdminModal() {
