@@ -135,6 +135,7 @@
       background: #16161a;
       border: 1px solid #334155;
       color: #fff;
+      width: 100%;
     }
   </style>
 </head>
@@ -144,7 +145,7 @@
   <button id="installApp" class="btn btn-primary install-btn">📲 安裝報價 App 至主畫面</button>
 
   <div class="card">
-    <h1>✨ 背板與鐵腳架報價系統</h1>
+    <h1>✨ 背板施工報價單</h1>
     
     <div class="form-group">
       <label>客戶類別 (Tier)</label>
@@ -301,6 +302,21 @@ let RATES = JSON.parse(localStorage.getItem('CUSTOM_RATES')) || JSON.parse(JSON.
 
 const FREE_ZONES = ["台北市", "臺北市", "板橋", "三重", "中和", "永和", "新莊", "新店", "土城", "蘆洲", "樹林", "汐止", "泰山", "五股", "淡水", "八里"];
 
+// 物件值讀取與寫入安全輔助函式 (取代不安全的 eval)
+function getNestedValue(obj, path) {
+  return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : 0, obj);
+}
+
+function setNestedValue(obj, path, value) {
+  const keys = path.split('.');
+  let current = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (!current[keys[i]]) current[keys[i]] = {};
+    current = current[keys[i]];
+  }
+  current[keys[keys.length - 1]] = value;
+}
+
 function checkTravelFee(address) {
   if (!address.trim()) return { hasFee: false, message: '', show: false };
   const isFree = FREE_ZONES.some(zone => address.includes(zone));
@@ -356,27 +372,27 @@ function calculate() {
     else standSize = '225';
   }
 
-  const stickerPrice = RATES.sticker[stickerType][tier];
+  const stickerPrice = getNestedValue(RATES, `sticker.${stickerType}.${tier}`);
   const stickerCost = Math.max(sqft * stickerPrice, 99);
 
-  const boardPrice = RATES.board[boardType][tier];
+  const boardPrice = getNestedValue(RATES, `board.${boardType}.${tier}`);
   const boardCost = sqft * boardPrice;
 
-  const wastePrice = RATES.sticker[stickerType].waste[tier];
+  const wastePrice = getNestedValue(RATES, `sticker.${stickerType}.waste.${tier}`);
   const wasteCost = wasteSqft * wastePrice;
 
-  const standPrice = RATES.stand[standSize][tier];
+  const standPrice = getNestedValue(RATES, `stand.${standSize}.${tier}`);
   const standCost = segments * standPrice;
 
-  const installUnitPrice = RATES.installUnit[tier];
-  const installBase = RATES.installBase[tier];
+  const installUnitPrice = getNestedValue(RATES, `installUnit.${tier}`);
+  const installBase = getNestedValue(RATES, `installBase.${tier}`);
   const installCost = Math.max(sqft * installUnitPrice, installBase);
 
-  const removeUnitPrice = RATES.removeUnit[tier];
-  const removeBase = RATES.removeBase[tier];
+  const removeUnitPrice = getNestedValue(RATES, `removeUnit.${tier}`);
+  const removeBase = getNestedValue(RATES, `removeBase.${tier}`);
   const removeCost = Math.max(sqft * removeUnitPrice, removeBase);
 
-  const trashPrice = RATES.trash[tier];
+  const trashPrice = getNestedValue(RATES, `trash.${tier}`);
   const trashCost = sqft * trashPrice;
 
   const items = [
@@ -427,12 +443,12 @@ function closePasswordModal() {
 }
 
 function verifyPassword() {
-  const pwd = document.getElementById('adminPwdInput').value;
+  const pwd = document.getElementById('adminPwdInput').value.trim();
   if (pwd === ADMIN_PASSWORD) {
     closePasswordModal();
     openAdminModal();
   } else {
-    alert("❌ 密碼錯誤！請重新輸入。");
+    alert("❌ 密碼錯誤！請輸入 5566");
   }
 }
 
@@ -445,7 +461,7 @@ function openAdminModal() {
     const tiers = ['cash', 'm5k', 'm30k', 'm100k'];
     let html = `<tr><td><strong>${label}</strong></td>`;
     tiers.forEach(t => {
-      let val = eval(`RATES.${path}.${t}`);
+      let val = getNestedValue(RATES, `${path}.${t}`);
       html += `<td><input type="number" step="0.1" data-path="${path}.${t}" value="${val}"></td>`;
     });
     html += '</tr>';
@@ -482,7 +498,7 @@ function saveAdminRates() {
   inputs.forEach(input => {
     const path = input.dataset.path;
     const val = parseFloat(input.value) || 0;
-    eval(`RATES.${path} = ${val}`);
+    setNestedValue(RATES, path, val);
   });
 
   localStorage.setItem('CUSTOM_RATES', JSON.stringify(RATES));
